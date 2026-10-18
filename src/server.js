@@ -2,6 +2,7 @@ const path = require("path");
 const crypto = require("crypto");
 const express = require("express");
 const cookieParser = require("cookie-parser");
+const { EmbedBuilder } = require("discord.js");
 const {
   serializeGuild,
   serializeMember,
@@ -154,16 +155,60 @@ function createServer(client) {
         return res.status(400).json({ error: "Choose a sendable text channel." });
       }
       const message = typeof req.body?.message === "string" ? req.body.message.trim() : "";
-      if (!message) return res.status(400).json({ error: "Message cannot be empty." });
+      const rawEmbed = req.body?.embed;
       if (message.length > 2000) return res.status(400).json({ error: "Messages can be at most 2,000 characters." });
+      if (!message && !rawEmbed) return res.status(400).json({ error: "Enter a message or provide an embed." });
+      let embed;
+      if (rawEmbed) {
+        const title = typeof rawEmbed.title === "string" ? rawEmbed.title.trim() : "";
+        const description = typeof rawEmbed.description === "string" ? rawEmbed.description.trim() : "";
+        const url = typeof rawEmbed.url === "string" ? rawEmbed.url.trim() : "";
+        const image = typeof rawEmbed.image === "string" ? rawEmbed.image.trim() : "";
+        const thumbnail = typeof rawEmbed.thumbnail === "string" ? rawEmbed.thumbnail.trim() : "";
+        const color = typeof rawEmbed.color === "string" ? rawEmbed.color.trim() : "";
+        if (!title) return res.status(400).json({ error: "Embed title is required." });
+        if (title.length > 256) return res.status(400).json({ error: "Embed title can be at most 256 characters." });
+        if (description.length > 4096) return res.status(400).json({ error: "Embed description can be at most 4,096 characters." });
+        const validateUrl = (value, label) => {
+          if (!value) return undefined;
+          try {
+            const parsed = new URL(value);
+            if (!["https:", "http:"].includes(parsed.protocol)) throw new Error();
+            return parsed.toString();
+          } catch {
+            const error = new Error(`${label} must be a valid http or https URL.`);
+            error.status = 400;
+            throw error;
+          }
+        };
+        const parsedUrl = validateUrl(url, "Website link");
+        const parsedImage = validateUrl(image, "Banner image URL");
+        const parsedThumbnail = validateUrl(thumbnail, "Thumbnail URL");
+        const embedDescription = [parsedUrl, description].filter(Boolean).join("\n");
+        if (embedDescription.length > 4096) return res.status(400).json({ error: "The website link and description together can be at most 4,096 characters." });
+        if (color && !/^#?[0-9a-fA-F]{6}$/.test(color)) {
+          return res.status(400).json({ error: "Accent color must be a hex color, like #e60026." });
+        }
+        const embedData = new EmbedBuilder().setTitle(title);
+        if (embedDescription) embedData.setDescription(embedDescription);
+        if (parsedUrl) embedData.setURL(parsedUrl);
+        if (parsedImage) embedData.setImage(parsedImage);
+        if (parsedThumbnail) embedData.setThumbnail(parsedThumbnail);
+        if (color) embedData.setColor(parseInt(color.replace("#", ""), 16));
+        embed = embedData;
+      }
       const me = guild.members.me || await guild.members.fetchMe();
-      if (!channel.permissionsFor(me)?.has("SendMessages")) {
+      const permissions = channel.permissionsFor(me);
+      if (!permissions?.has("SendMessages")) {
         return res.status(403).json({ error: "The bot cannot send messages in that channel." });
       }
-      await channel.send({ content: message, allowedMentions: { parse: [] } });
+      if (embed && !permissions.has("EmbedLinks")) {
+        return res.status(403).json({ error: "The bot needs the Embed Links permission in that channel." });
+      }
+      await channel.send({ content: message || undefined, embeds: embed ? [embed] : [], allowedMentions: { parse: [] } });
       res.json({ ok: true });
     } catch (err) {
-      res.status(500).json({ error: err.message || "Could not send message." });
+      res.status(err.status || 500).json({ error: err.message || "Could not send message." });
     }
   });
 

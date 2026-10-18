@@ -253,7 +253,8 @@ select:focus {
 
 .message-form h2 { margin: 0 0 8px; }
 .message-form select,
-.message-form textarea {
+.message-form textarea,
+.message-form input {
   width: 100%;
   background: var(--panel-2);
   color: var(--text);
@@ -263,6 +264,19 @@ select:focus {
   font: inherit;
 }
 .message-form textarea { resize: vertical; }
+.mode-toggle {
+  display: flex;
+  gap: 8px;
+  margin: 18px 0 4px;
+}
+.embed-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 16px;
+}
+.embed-two-col label { min-height: 42px; }
+.embed-hint { margin: 8px 0 0; }
 .message-actions {
   display: flex;
   align-items: center;
@@ -339,4 +353,5 @@ select:focus {
     min-height: auto;
   }
   .message-actions { align-items: flex-start; flex-direction: column; }
+  .embed-two-col { grid-template-columns: 1fr; }
 }

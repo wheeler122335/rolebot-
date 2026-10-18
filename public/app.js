@@ -9,6 +9,7 @@ const state = {
   roles: [],
   channels: [],
   page: "roles",
+  messageMode: "text",
   channelId: "",
   selected: null,
   query: "",
@@ -72,6 +73,87 @@ function renderLogin() {
     h("div", { class: "error" }, state.error),
   ]);
   app.replaceChildren(h("div", { class: "login-wrap" }, h("div", { class: "card" }, form)));
+}
+
+function renderMessagesPage() {
+  return h("form", {
+    class: "message-form",
+    onSubmit: async (e) => {
+      e.preventDefault();
+      const fields = e.target.elements;
+      const message = fields.namedItem("message").value.trim();
+      if (!state.channelId || (state.messageMode === "text" && !message)) return;
+      const payload = { message };
+      if (state.messageMode === "embed") {
+        payload.embed = {
+          title: fields.namedItem("embedTitle").value.trim(),
+          description: fields.namedItem("embedDescription").value.trim(),
+          url: fields.namedItem("embedUrl").value.trim(),
+          thumbnail: fields.namedItem("embedThumbnail").value.trim(),
+          image: fields.namedItem("embedImage").value.trim(),
+          color: fields.namedItem("embedColor").value.trim(),
+        };
+      }
+      state.loading = true;
+      state.toast = "";
+      render();
+      try {
+        await api(`/api/guilds/${state.guildId}/channels/${state.channelId}/messages`, {
+          method: "POST", body: JSON.stringify(payload),
+        });
+        state.toast = state.messageMode === "embed" ? "Embed sent." : "Message sent.";
+      } catch (err) {
+        state.toast = err.message;
+      } finally {
+        state.loading = false;
+        render();
+      }
+    },
+  }, [
+    h("h2", {}, "Send a message"),
+    h("p", { class: "hint" }, "Send a regular message or build a rich Discord embed."),
+    h("div", { class: "mode-toggle" }, [
+      h("button", { class: `btn${state.messageMode === "text" ? "" : " ghost"}`, type: "button", onClick: () => { state.messageMode = "text"; render(); } }, "Text message"),
+      h("button", { class: `btn${state.messageMode === "embed" ? "" : " ghost"}`, type: "button", onClick: () => { state.messageMode = "embed"; render(); } }, "Embed builder"),
+    ]),
+    h("label", { for: "message-channel", style: "margin-top:18px" }, "Channel"),
+    h("select", { id: "message-channel", required: true, onChange: (e) => { state.channelId = e.target.value; } }, [
+      h("option", { value: "", selected: !state.channelId, disabled: true }, "Choose a channel"),
+      ...state.channels.map((channel) => h("option", { value: channel.id, selected: channel.id === state.channelId }, `# ${channel.name}`)),
+    ]),
+    state.messageMode === "embed"
+      ? [
+          h("label", { for: "embed-title", style: "margin-top:18px" }, "Embed title"),
+          h("input", { id: "embed-title", name: "embedTitle", maxlength: "256", placeholder: "Official website", required: true }),
+          h("label", { for: "embed-url", style: "margin-top:16px" }, "Clickable website link (optional)"),
+          h("input", { id: "embed-url", name: "embedUrl", type: "url", placeholder: "https://example.com" }),
+          h("label", { for: "embed-description", style: "margin-top:16px" }, "Description (optional)"),
+          h("textarea", { id: "embed-description", name: "embedDescription", maxlength: "4096", rows: "3", placeholder: "Add a short description…" }),
+          h("div", { class: "embed-two-col" }, [
+            h("div", {}, [
+              h("label", { for: "embed-thumbnail" }, "Small thumbnail URL (optional)"),
+              h("input", { id: "embed-thumbnail", name: "embedThumbnail", type: "url", placeholder: "https://example.com/logo.png" }),
+            ]),
+            h("div", {}, [
+              h("label", { for: "embed-image" }, "Large banner image URL (optional)"),
+              h("input", { id: "embed-image", name: "embedImage", type: "url", placeholder: "https://example.com/banner.png" }),
+            ]),
+          ]),
+          h("label", { for: "embed-color", style: "margin-top:16px" }, "Accent color (optional)"),
+          h("input", { id: "embed-color", name: "embedColor", placeholder: "#e60026", value: "#e60026", pattern: "#?[0-9a-fA-F]{6}" }),
+          h("p", { class: "hint embed-hint" }, "Image links must be public http or https URLs. The bot needs Embed Links permission in the channel."),
+          h("label", { for: "message-content", style: "margin-top:18px" }, "Message above the embed (optional)"),
+          h("textarea", { id: "message-content", name: "message", maxlength: "2000", rows: "3", placeholder: "For example: Check out our website!" }),
+        ]
+      : [
+          h("label", { for: "message-content", style: "margin-top:18px" }, "Message"),
+          h("textarea", { id: "message-content", name: "message", maxlength: "2000", rows: "6", placeholder: "Write your message…", required: true }),
+        ],
+    h("div", { class: "message-actions" }, [
+      h("span", { class: "hint" }, "Mentions in the message won’t ping anyone."),
+      h("button", { class: "btn", type: "submit", disabled: state.loading || !state.channels.length }, state.loading ? "Sending…" : state.messageMode === "embed" ? "Send embed" : "Send message"),
+    ]),
+  ]);
 }
 
 function renderDash() {
@@ -156,44 +238,7 @@ function renderDash() {
           h("div", { class: "member-list" }, memberButtons.length ? memberButtons : h("div", { class: "hint" }, "No members loaded.")),
         ]) : null,
         h("main", { class: "main" }, state.page === "messages"
-          ? h("form", {
-              class: "message-form",
-              onSubmit: async (e) => {
-                e.preventDefault();
-                const message = e.target.message.value.trim();
-                if (!state.channelId || !message) return;
-                state.loading = true;
-                state.toast = "";
-                render();
-                try {
-                  await api(`/api/guilds/${state.guildId}/channels/${state.channelId}/messages`, {
-                    method: "POST", body: JSON.stringify({ message }),
-                  });
-                  state.toast = "Message sent.";
-                  render();
-                } catch (err) {
-                  state.toast = err.message;
-                  render();
-                } finally {
-                  state.loading = false;
-                  render();
-                }
-              },
-            }, [
-              h("h2", {}, "Send a message"),
-              h("p", { class: "hint" }, "Choose a channel and send a message as the bot."),
-              h("label", { for: "message-channel" }, "Channel"),
-              h("select", { id: "message-channel", required: true, onChange: (e) => { state.channelId = e.target.value; } }, [
-                h("option", { value: "", selected: !state.channelId, disabled: true }, "Choose a channel"),
-                ...state.channels.map((channel) => h("option", { value: channel.id, selected: channel.id === state.channelId }, `# ${channel.name}`)),
-              ]),
-              h("label", { for: "message-content", style: "margin-top:18px" }, "Message"),
-              h("textarea", { id: "message-content", name: "message", maxlength: "2000", rows: "6", placeholder: "Write your message…", required: true }),
-              h("div", { class: "message-actions" }, [
-                h("span", { class: "hint" }, "Up to 2,000 characters. Mentions will not ping anyone."),
-                h("button", { class: "btn", type: "submit", disabled: state.loading || !state.channels.length }, state.loading ? "Sending…" : "Send message"),
-              ]),
-            ])
+          ? renderMessagesPage()
           : state.page === "moderation"
           ? selected
             ? [
