@@ -1,11 +1,15 @@
 const app = document.getElementById("app");
 
 const state = {
+  appName: "Zyntra Bot",
   me: null,
   guilds: [],
   guildId: "",
   members: [],
   roles: [],
+  channels: [],
+  page: "roles",
+  channelId: "",
   selected: null,
   query: "",
   error: "",
@@ -59,8 +63,8 @@ function renderLogin() {
       }
     },
   }, [
-    h("h1", {}, "Rolebot"),
-    h("p", {}, "Click a member, then click roles to give or take them instantly."),
+    h("h1", {}, `${state.appName} Dashboard`),
+    h("p", {}, "Manage server roles and send channel messages from one dashboard."),
     h("label", { for: "password" }, "Dashboard password"),
     h("input", { id: "password", name: "password", type: "password", autocomplete: "current-password", required: true }),
     h("div", { style: "height:14px" }),
@@ -108,7 +112,7 @@ function renderDash() {
         h("div", { class: "brand" }, [
           state.me?.bot?.avatar ? h("img", { src: state.me.bot.avatar, alt: "" }) : null,
           h("div", {}, [
-            h("div", {}, "Rolebot"),
+            h("div", {}, `${state.appName} Dashboard`),
             h("div", { class: "hint", style: "margin:0" }, state.me?.bot?.tag || "Dashboard"),
           ]),
         ]),
@@ -130,8 +134,12 @@ function renderDash() {
           }, "Log out"),
         ]),
       ]),
-      h("div", { class: "layout" }, [
-        h("aside", { class: "sidebar" }, [
+      h("nav", { class: "dashboard-nav" }, [
+        h("button", { class: `btn${state.page === "roles" ? "" : " ghost"}`, onClick: () => { state.page = "roles"; render(); } }, "Roles"),
+        h("button", { class: `btn${state.page === "messages" ? "" : " ghost"}`, onClick: () => { state.page = "messages"; render(); } }, "Send a message"),
+      ]),
+      h("div", { class: "layout", style: state.page === "messages" ? "grid-template-columns:1fr" : "" }, [
+        state.page === "roles" ? h("aside", { class: "sidebar" }, [
           h("input", {
             type: "search",
             placeholder: "Search members…",
@@ -145,8 +153,47 @@ function renderDash() {
           }),
           h("button", { class: "btn", onClick: loadGuild }, "Search"),
           h("div", { class: "member-list" }, memberButtons.length ? memberButtons : h("div", { class: "hint" }, "No members loaded.")),
-        ]),
-        h("main", { class: "main" }, selected
+        ]) : null,
+        h("main", { class: "main" }, state.page === "messages"
+          ? h("form", {
+              class: "message-form",
+              onSubmit: async (e) => {
+                e.preventDefault();
+                const message = e.target.message.value.trim();
+                if (!state.channelId || !message) return;
+                state.loading = true;
+                state.toast = "";
+                render();
+                try {
+                  await api(`/api/guilds/${state.guildId}/channels/${state.channelId}/messages`, {
+                    method: "POST", body: JSON.stringify({ message }),
+                  });
+                  state.toast = "Message sent.";
+                  render();
+                } catch (err) {
+                  state.toast = err.message;
+                  render();
+                } finally {
+                  state.loading = false;
+                  render();
+                }
+              },
+            }, [
+              h("h2", {}, "Send a message"),
+              h("p", { class: "hint" }, "Choose a channel and send a message as the bot."),
+              h("label", { for: "message-channel" }, "Channel"),
+              h("select", { id: "message-channel", required: true, onChange: (e) => { state.channelId = e.target.value; } }, [
+                h("option", { value: "", selected: !state.channelId, disabled: true }, "Choose a channel"),
+                ...state.channels.map((channel) => h("option", { value: channel.id, selected: channel.id === state.channelId }, `# ${channel.name}`)),
+              ]),
+              h("label", { for: "message-content", style: "margin-top:18px" }, "Message"),
+              h("textarea", { id: "message-content", name: "message", maxlength: "2000", rows: "6", placeholder: "Write your message…", required: true }),
+              h("div", { class: "message-actions" }, [
+                h("span", { class: "hint" }, "Up to 2,000 characters. Mentions will not ping anyone."),
+                h("button", { class: "btn", type: "submit", disabled: state.loading || !state.channels.length }, state.loading ? "Sending…" : "Send message"),
+              ]),
+            ])
+          : selected
           ? [
               h("div", { class: "person" }, [
                 h("img", { src: selected.avatar, alt: "" }),
@@ -190,12 +237,15 @@ async function toggleRole(member, role, assigned) {
 async function loadGuild() {
   if (!state.guildId) return;
   try {
-    const [members, roles] = await Promise.all([
+    const [members, roles, channels] = await Promise.all([
       api(`/api/guilds/${state.guildId}/members?q=${encodeURIComponent(state.query)}`),
       api(`/api/guilds/${state.guildId}/roles`),
+      api(`/api/guilds/${state.guildId}/channels`),
     ]);
     state.members = members.members;
     state.roles = roles.roles;
+    state.channels = channels.channels;
+    if (!state.channels.some((channel) => channel.id === state.channelId)) state.channelId = "";
     if (state.selected && !state.members.some((m) => m.id === state.selected)) {
       state.selected = null;
     }
@@ -213,6 +263,9 @@ function render() {
 
 async function boot() {
   try {
+    const status = await api("/api/status");
+    state.appName = status.name || state.appName;
+    document.title = `${state.appName} Dashboard`;
     const me = await api("/api/me");
     const guilds = await api("/api/guilds");
     state.me = me;

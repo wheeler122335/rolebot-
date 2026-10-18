@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: zyntra-bot-dashboard
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BOT_DISPLAY_NAME
+        value: Zyntra Bot
+      - key: DISCORD_APPLICATION_ID
+        value: "1561183981834211349"
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: DASHBOARD_PASSWORD
+        sync: false

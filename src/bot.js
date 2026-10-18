@@ -9,6 +9,12 @@ function createBot() {
   });
 
   client.once("ready", () => {
+    const expectedId = process.env.DISCORD_APPLICATION_ID;
+    if (expectedId && client.user.id !== expectedId) {
+      console.error(`The configured token belongs to bot ${client.user.id}, not the expected application ${expectedId}.`);
+      client.destroy();
+      process.exit(1);
+    }
     console.log(`Bot logged in as ${client.user.tag}`);
   });
 

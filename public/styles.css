@@ -114,8 +114,15 @@ select:focus {
 
 .shell {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto 1fr;
   min-height: 100vh;
+}
+
+.dashboard-nav {
+  display: flex;
+  gap: 8px;
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--border);
 }
 
 .topbar {
@@ -235,6 +242,36 @@ select:focus {
   gap: 10px;
 }
 
+.message-form {
+  width: min(720px, 100%);
+  margin: 0 auto;
+  padding: 24px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.message-form h2 { margin: 0 0 8px; }
+.message-form select,
+.message-form textarea {
+  width: 100%;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font: inherit;
+}
+.message-form textarea { resize: vertical; }
+.message-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+.message-actions .hint { margin: 0; }
+
 .role {
   border: 1px solid color-mix(in srgb, var(--role) 55%, var(--border));
   background: color-mix(in srgb, var(--role) 16%, var(--panel));
@@ -273,4 +310,5 @@ select:focus {
   .main {
     min-height: auto;
   }
+  .message-actions { align-items: flex-start; flex-direction: column; }
 }
