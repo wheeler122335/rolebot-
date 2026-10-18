@@ -13,6 +13,8 @@ services:
         value: Zyntra Bot
       - key: DISCORD_APPLICATION_ID
         value: "1561183981834211349"
+      - key: ENABLE_PREFIX_COMMANDS
+        value: "false"
       - key: DISCORD_TOKEN
         sync: false
       - key: DASHBOARD_PASSWORD

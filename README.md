@@ -1,11 +1,11 @@
 # Zyntra Bot Dashboard
 
-Zyntra Bot with a dashboard for managing member roles and sending messages to server channels.
+Zyntra Bot with a dashboard for managing member roles, moderating members, and sending messages to server channels.
 
 ## Setup
 
 1. Create a Discord application at [https://discord.com/developers/applications](https://discord.com/developers/applications).
-2. Open **Bot** and copy the token. Turn on **Server Members Intent**.
+2. Open **Bot** and copy the token. Turn on **Server Members Intent**. To use `*` prefix commands, also turn on **Message Content Intent** and set `ENABLE_PREFIX_COMMANDS=true` in `.env` or Render.
 3. Open **OAuth2 → URL Generator**. Scopes: `bot`. Permissions: **Manage Roles**, **View Channels**, **View Server Members**, and **Send Messages**.
 4. Open the generated invite URL and add the bot to your server.
 5. In **Server Settings → Roles**, drag the bot's role **above** the roles you want it to give.
@@ -23,7 +23,9 @@ npm install
 npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000), log in, then use **Roles** to manage member roles or **Send a message** to post in a channel. Message mentions are suppressed so sending `@everyone` or a user mention will not ping them.
+Open [http://localhost:3000](http://localhost:3000), log in, then use **Roles** to manage member roles, **Moderation** to ban, kick, mute (Discord timeout), or unmute a member, or **Send a message** to post in a channel. Ban and kick ask for confirmation. Message mentions are suppressed so sending `@everyone` or a user mention will not ping them.
+
+When prefix commands are enabled, members with the matching Discord permission can use `*ban @member [reason]`, `*kick @member [reason]`, `*mute @member [duration] [reason]`, and `*unmute @member [reason]`. Mute defaults to 10 minutes; durations can be `30s`, `10m`, `2h`, or `1d`, up to 28 days. `*help` lists the commands. The bot's highest role must be above the target member's highest role.
 
 ## Hosting
 

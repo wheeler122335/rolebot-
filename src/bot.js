@@ -1,11 +1,17 @@
 const { Client, GatewayIntentBits } = require("discord.js");
+const { handlePrefixCommand } = require("./moderation");
 
 function createBot() {
+  const prefixCommandsEnabled = process.env.ENABLE_PREFIX_COMMANDS === "true";
+  const intents = [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+  ];
+  if (prefixCommandsEnabled) intents.push(GatewayIntentBits.MessageContent);
+
   const client = new Client({
-    intents: [
-      GatewayIntentBits.Guilds,
-      GatewayIntentBits.GuildMembers,
-    ],
+    intents,
   });
 
   client.once("ready", () => {
@@ -16,7 +22,16 @@ function createBot() {
       process.exit(1);
     }
     console.log(`Bot logged in as ${client.user.tag}`);
+    if (prefixCommandsEnabled) console.log("Prefix moderation commands are enabled.");
   });
+
+  if (prefixCommandsEnabled) {
+    client.on("messageCreate", (message) => {
+      handlePrefixCommand(message).catch((err) => {
+        console.error("Prefix command failed:", err.message || err);
+      });
+    });
+  }
 
   return client;
 }

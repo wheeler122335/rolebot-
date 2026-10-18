@@ -137,9 +137,10 @@ function renderDash() {
       h("nav", { class: "dashboard-nav" }, [
         h("button", { class: `btn${state.page === "roles" ? "" : " ghost"}`, onClick: () => { state.page = "roles"; render(); } }, "Roles"),
         h("button", { class: `btn${state.page === "messages" ? "" : " ghost"}`, onClick: () => { state.page = "messages"; render(); } }, "Send a message"),
+        h("button", { class: `btn${state.page === "moderation" ? "" : " ghost"}`, onClick: () => { state.page = "moderation"; render(); } }, "Moderation"),
       ]),
       h("div", { class: "layout", style: state.page === "messages" ? "grid-template-columns:1fr" : "" }, [
-        state.page === "roles" ? h("aside", { class: "sidebar" }, [
+        ["roles", "moderation"].includes(state.page) ? h("aside", { class: "sidebar" }, [
           h("input", {
             type: "search",
             placeholder: "Search members…",
@@ -193,6 +194,70 @@ function renderDash() {
                 h("button", { class: "btn", type: "submit", disabled: state.loading || !state.channels.length }, state.loading ? "Sending…" : "Send message"),
               ]),
             ])
+          : state.page === "moderation"
+          ? selected
+            ? [
+                h("form", {
+                  class: "message-form moderation-form",
+                  onSubmit: async (e) => {
+                    e.preventDefault();
+                    const action = e.target.elements.namedItem("action").value;
+                    const durationMinutes = Number(e.target.elements.namedItem("durationMinutes").value);
+                    const reason = e.target.elements.namedItem("reason").value.trim();
+                    if (["ban", "kick"].includes(action) && !window.confirm(`Are you sure you want to ${action} ${selected.displayName}?`)) return;
+                    state.loading = true;
+                    state.toast = "";
+                    render();
+                    try {
+                      const result = await api(`/api/guilds/${state.guildId}/members/${selected.id}/moderation`, {
+                        method: "POST",
+                        body: JSON.stringify({ action, durationMinutes, reason }),
+                      });
+                      state.toast = result.message;
+                      if (result.removed) {
+                        state.members = state.members.filter((member) => member.id !== selected.id);
+                        state.selected = null;
+                      }
+                    } catch (err) {
+                      state.toast = err.message;
+                    } finally {
+                      state.loading = false;
+                      render();
+                    }
+                  },
+                }, [
+                  h("h2", {}, `Moderate ${selected.displayName}`),
+                  h("p", { class: "hint" }, "Ban and kick remove a member from the server. Mute applies a Discord timeout."),
+                  h("label", { for: "moderation-action" }, "Action"),
+                  h("select", { id: "moderation-action", name: "action", required: true }, [
+                    h("option", { value: "mute", selected: true }, "Mute (timeout)"),
+                    h("option", { value: "unmute" }, "Unmute (remove timeout)"),
+                    h("option", { value: "kick" }, "Kick from server"),
+                    h("option", { value: "ban" }, "Ban from server"),
+                  ]),
+                  h("label", { for: "moderation-duration", style: "margin-top:16px" }, "Mute duration (used for Mute only)"),
+                  h("select", { id: "moderation-duration", name: "durationMinutes" }, [
+                    h("option", { value: "10", selected: true }, "10 minutes"),
+                    h("option", { value: "60" }, "1 hour"),
+                    h("option", { value: "1440" }, "1 day"),
+                    h("option", { value: "10080" }, "7 days"),
+                    h("option", { value: "40320" }, "28 days"),
+                  ]),
+                  h("label", { for: "moderation-reason", style: "margin-top:16px" }, "Reason (optional)"),
+                  h("input", { id: "moderation-reason", name: "reason", maxlength: "450", placeholder: "Reason for this action" }),
+                  h("div", { class: "message-actions" }, [
+                    h("span", { class: "hint" }, "The bot can only moderate members below its highest role."),
+                    h("button", { class: "btn", type: "submit", disabled: state.loading }, state.loading ? "Working…" : "Apply action"),
+                  ]),
+                ]),
+                h("section", { class: "command-reference" }, [
+                  h("h3", {}, "Use commands in Discord"),
+                  h("p", {}, "When prefix commands are enabled, moderators can use:"),
+                  h("pre", {}, "*help\n*ban @member [reason]\n*kick @member [reason]\n*mute @member [10m] [reason]\n*unmute @member [reason]"),
+                  h("p", { class: "hint" }, "Commands require the matching Discord permission. Mute defaults to 10 minutes; durations can be 30s, 10m, 2h, or 1d (up to 28 days)."),
+                ]),
+              ]
+            : h("div", { class: "empty" }, "Pick someone on the left to moderate." )
           : selected
           ? [
               h("div", { class: "person" }, [

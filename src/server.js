@@ -9,6 +9,7 @@ const {
   getAssignableRole,
   listMembers,
 } = require("./bot");
+const { performModerationAction } = require("./moderation");
 
 const sessions = new Set();
 const loginAttempts = new Map();
@@ -163,6 +164,28 @@ function createServer(client) {
       res.json({ ok: true });
     } catch (err) {
       res.status(500).json({ error: err.message || "Could not send message." });
+    }
+  });
+
+  app.post("/api/guilds/:guildId/members/:memberId/moderation", requireAuth, async (req, res) => {
+    try {
+      const guild = await getGuild(client, req.params.guildId);
+      if (!guild) return res.status(404).json({ error: "Server not found." });
+
+      const action = String(req.body?.action || "").toLowerCase();
+      const reason = typeof req.body?.reason === "string" ? req.body.reason.trim() : "";
+      if (reason.length > 450) return res.status(400).json({ error: "Reason must be 450 characters or fewer." });
+      const member = await guild.members.fetch(req.params.memberId);
+      const durationMinutes = Number(req.body?.durationMinutes);
+      const durationMs = Number.isFinite(durationMinutes) ? durationMinutes * 60_000 : NaN;
+      const result = await performModerationAction(guild, member, action, {
+        reason,
+        durationMs,
+        actorLabel: "Dashboard moderation",
+      });
+      res.json({ ok: true, message: result, removed: action === "ban" || action === "kick" });
+    } catch (err) {
+      res.status(err.status || 500).json({ error: err.message || "Moderation action failed." });
     }
   });
 
