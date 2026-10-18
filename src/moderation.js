@@ -72,10 +72,10 @@ async function handlePrefixCommand(message) {
     return message.reply({
       content: [
         "Zyntra moderation commands:",
-        "`*ban @member [reason]`",
-        "`*kick @member [reason]`",
-        "`*mute @member [duration] [reason]` (default 10m; duration examples: 30s, 10m, 2h, 1d)",
-        "`*unmute @member [reason]`",
+        "`*ban <user ID or @member> [reason]` (stays until manually unbanned)",
+        "`*kick <user ID or @member> [reason]`",
+        "`*mute <user ID or @member> [duration] [reason]` (default 10m; duration examples: 30s, 10m, 2h, 1d)",
+        "`*unmute <user ID or @member> [reason]`",
         "You need the matching Discord moderation permission. Only members below your highest role and the bot's highest role can be moderated.",
       ].join("\n"),
       allowedMentions: { parse: [] },
@@ -88,9 +88,11 @@ async function handlePrefixCommand(message) {
     return message.reply({ content: `You need the ${permission} permission to use *${command}.`, allowedMentions: { parse: [] } });
   }
 
-  const target = message.mentions.members.first();
+  const targetMention = message.mentions.members.first();
+  const targetId = !targetMention && /^\d{17,20}$/.test(commandArgs[0] || "") ? commandArgs[0] : null;
+  const target = targetMention || (targetId ? await message.guild.members.fetch(targetId).catch(() => null) : null);
   if (!target) {
-    return message.reply({ content: `Mention a member. Example: *${command} @member${command === "mute" ? " 10m" : ""}`, allowedMentions: { parse: [] } });
+    return message.reply({ content: `Give a member ID or mention. Example: *${command} 123456789012345678${command === "mute" ? " 10m" : ""}`, allowedMentions: { parse: [] } });
   }
   if (target.id === message.author.id) {
     return message.reply({ content: "You cannot use this command on yourself.", allowedMentions: { parse: [] } });
@@ -99,11 +101,12 @@ async function handlePrefixCommand(message) {
     return message.reply({ content: "You can only moderate members below your highest role.", allowedMentions: { parse: [] } });
   }
 
+  const remainingArgs = targetMention ? commandArgs : commandArgs.slice(1);
   const mentionPattern = new RegExp(`<@!?${target.id}>`);
-  const targetMention = commandArgs.join(" ").match(mentionPattern);
-  const afterTarget = targetMention
-    ? commandArgs.join(" ").slice(targetMention.index + targetMention[0].length).trim()
-    : "";
+  const mentionPosition = remainingArgs.join(" ").match(mentionPattern);
+  const afterTarget = targetMention && mentionPosition
+    ? remainingArgs.join(" ").slice(mentionPosition.index + mentionPosition[0].length).trim()
+    : remainingArgs.join(" ").trim();
   let reason = afterTarget;
   let durationMs;
   if (command === "mute") {

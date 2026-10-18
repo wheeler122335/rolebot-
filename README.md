@@ -25,7 +25,7 @@ npm start
 
 Open [http://localhost:3000](http://localhost:3000), log in, then use **Roles** to manage member roles, **Moderation** to ban, kick, mute (Discord timeout), or unmute a member, or **Send a message** to post in a channel. Ban and kick ask for confirmation. Message mentions are suppressed so sending `@everyone` or a user mention will not ping them.
 
-When prefix commands are enabled, members with the matching Discord permission can use `*ban @member [reason]`, `*kick @member [reason]`, `*mute @member [duration] [reason]`, and `*unmute @member [reason]`. Mute defaults to 10 minutes; durations can be `30s`, `10m`, `2h`, or `1d`, up to 28 days. `*help` lists the commands. The bot's highest role must be above the target member's highest role.
+When prefix commands are enabled, members with the matching Discord permission can use `*ban USER_ID [reason]`, `*kick USER_ID [reason]`, `*mute USER_ID [duration] [reason]`, and `*unmute USER_ID [reason]`. A user mention can be used instead of an ID. Bans stay until manually removed. Mute defaults to 10 minutes; durations can be `30s`, `10m`, `2h`, or `1d`, up to 28 days. `*help` lists the commands. The bot's highest role must be above the target member's highest role.
 
 ## Hosting
 

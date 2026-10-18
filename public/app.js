@@ -253,8 +253,8 @@ function renderDash() {
                 h("section", { class: "command-reference" }, [
                   h("h3", {}, "Use commands in Discord"),
                   h("p", {}, "When prefix commands are enabled, moderators can use:"),
-                  h("pre", {}, "*help\n*ban @member [reason]\n*kick @member [reason]\n*mute @member [10m] [reason]\n*unmute @member [reason]"),
-                  h("p", { class: "hint" }, "Commands require the matching Discord permission. Mute defaults to 10 minutes; durations can be 30s, 10m, 2h, or 1d (up to 28 days)."),
+                  h("pre", {}, "*help\n*ban USER_ID [reason]\n*kick USER_ID [reason]\n*mute USER_ID [10m] [reason]\n*unmute USER_ID [reason]"),
+                  h("p", { class: "hint" }, "You can use a member ID or @mention. Commands require the matching Discord permission. Bans stay until manually removed. Mute defaults to 10 minutes; durations can be 30s, 10m, 2h, or 1d (up to 28 days)."),
                 ]),
               ]
             : h("div", { class: "empty" }, "Pick someone on the left to moderate." )
