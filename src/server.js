@@ -191,7 +191,6 @@ function createServer(client) {
         }
         const embedData = new EmbedBuilder().setTitle(title);
         if (embedDescription) embedData.setDescription(embedDescription);
-        if (parsedUrl) embedData.setURL(parsedUrl);
         if (parsedImage) embedData.setImage(parsedImage);
         if (parsedThumbnail) embedData.setThumbnail(parsedThumbnail);
         if (color) embedData.setColor(parseInt(color.replace("#", ""), 16));

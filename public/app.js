@@ -130,7 +130,7 @@ function renderMessagesPage() {
       ? [
           h("label", { for: "embed-title", style: "margin-top:18px" }, "Embed title"),
           h("input", { id: "embed-title", name: "embedTitle", maxlength: "256", placeholder: "Official website", required: true }),
-          h("label", { for: "embed-url", style: "margin-top:16px" }, "Clickable website link (optional)"),
+          h("label", { for: "embed-url", style: "margin-top:16px" }, "Website URL shown under the title (optional)"),
           h("input", { id: "embed-url", name: "embedUrl", type: "url", placeholder: "https://example.com" }),
           h("label", { for: "embed-description", style: "margin-top:16px" }, "Message inside the embed (optional)"),
           h("textarea", { id: "embed-description", name: "embedDescription", maxlength: "4096", rows: "3", placeholder: "Write the message that should appear inside the card…" }),
