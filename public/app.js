@@ -42,10 +42,15 @@ function h(tag, attrs = {}, children = []) {
     else if (value === false || value == null) continue;
     else el.setAttribute(key, value === true ? "" : value);
   }
-  for (const child of [].concat(children)) {
-    if (child == null || child === false) continue;
+  const appendChild = (child) => {
+    if (child == null || child === false) return;
+    if (Array.isArray(child)) {
+      child.forEach(appendChild);
+      return;
+    }
     el.append(child.nodeType ? child : document.createTextNode(child));
-  }
+  };
+  appendChild(children);
   return el;
 }
 
