@@ -86,7 +86,7 @@ function renderMessagesPage() {
     onSubmit: async (e) => {
       e.preventDefault();
       const fields = e.target.elements;
-      const message = fields.namedItem("message").value.trim();
+      const message = state.messageMode === "text" ? fields.namedItem("message").value.trim() : "";
       if (!state.channelId || (state.messageMode === "text" && !message)) return;
       const payload = { message };
       if (state.messageMode === "embed") {
@@ -132,23 +132,21 @@ function renderMessagesPage() {
           h("input", { id: "embed-title", name: "embedTitle", maxlength: "256", placeholder: "Official website", required: true }),
           h("label", { for: "embed-url", style: "margin-top:16px" }, "Clickable website link (optional)"),
           h("input", { id: "embed-url", name: "embedUrl", type: "url", placeholder: "https://example.com" }),
-          h("label", { for: "embed-description", style: "margin-top:16px" }, "Description (optional)"),
-          h("textarea", { id: "embed-description", name: "embedDescription", maxlength: "4096", rows: "3", placeholder: "Add a short description…" }),
+          h("label", { for: "embed-description", style: "margin-top:16px" }, "Message inside the embed (optional)"),
+          h("textarea", { id: "embed-description", name: "embedDescription", maxlength: "4096", rows: "3", placeholder: "Write the message that should appear inside the card…" }),
           h("div", { class: "embed-two-col" }, [
             h("div", {}, [
               h("label", { for: "embed-thumbnail" }, "Small thumbnail URL (optional)"),
               h("input", { id: "embed-thumbnail", name: "embedThumbnail", type: "url", placeholder: "https://example.com/logo.png" }),
             ]),
             h("div", {}, [
-              h("label", { for: "embed-image" }, "Large banner image URL (optional)"),
+              h("label", { for: "embed-image" }, "Large banner image URL (optional; shown wide)"),
               h("input", { id: "embed-image", name: "embedImage", type: "url", placeholder: "https://example.com/banner.png" }),
             ]),
           ]),
           h("label", { for: "embed-color", style: "margin-top:16px" }, "Accent color (optional)"),
           h("input", { id: "embed-color", name: "embedColor", placeholder: "#e60026", value: "#e60026", pattern: "#?[0-9a-fA-F]{6}" }),
           h("p", { class: "hint embed-hint" }, "Image links must be public http or https URLs. The bot needs Embed Links permission in the channel."),
-          h("label", { for: "message-content", style: "margin-top:18px" }, "Message above the embed (optional)"),
-          h("textarea", { id: "message-content", name: "message", maxlength: "2000", rows: "3", placeholder: "For example: Check out our website!" }),
         ]
       : [
           h("label", { for: "message-content", style: "margin-top:18px" }, "Message"),
